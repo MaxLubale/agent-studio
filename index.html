@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f4f0;
+      --bg-tertiary: #eeede8;
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6a65;
+      --border: rgba(0,0,0,0.1);
+      --border-mid: rgba(0,0,0,0.18);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-tertiary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--bg-primary);
+      border-bottom: 0.5px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 30px; height: 30px;
+      background: #2C2C2A;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-logo svg { width: 16px; height: 16px; }
+    .header-title { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+    .header-tag {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 0.5px solid var(--border);
+    }
+
+    /* TABS */
+    .tab-bar {
+      background: var(--bg-primary);
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      padding: 0 24px;
+      gap: 2px;
+    }
+    .tab {
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: color 0.15s;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { color: var(--text-primary); border-bottom-color: #2C2C2A; }
+    .tab-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* BODY */
+    .body {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      gap: 0;
+    }
+
+    .panel { display: none; flex: 1; flex-direction: column; gap: 14px; }
+    .panel.active { display: flex; }
+
+    .panel-inner { display: flex; gap: 14px; flex: 1; }
+
+    /* CHAT WINDOW */
+    .chat-window {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 460px;
+    }
+
+    .chat-header {
+      padding: 12px 16px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .agent-badge {
+      padding: 3px 11px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .agent-status {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #1D9E75; }
+
+    /* MESSAGES */
+    .messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .msg { display: flex; gap: 10px; align-items: flex-start; }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .msg-bubble {
+      max-width: 78%;
+      padding: 9px 13px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .msg.agent .msg-bubble {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 0.5px solid var(--border);
+      border-top-left-radius: 3px;
+    }
+    .msg.user .msg-bubble {
+      background: #2C2C2A;
+      color: #F1EFE8;
+      border-top-right-radius: 3px;
+    }
+    .msg-time { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+    .msg.user .msg-time { text-align: right; }
+
+    /* THINKING */
+    .thinking-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot-pulse { display: flex; gap: 3px; }
+    .dot-pulse span {
+      width: 4px; height: 4px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+    .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    /* INPUT */
+    .chips-row {
+      padding: 0 14px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      padding: 5px 11px;
+      border: 0.5px solid var(--border-mid);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      background: var(--bg-primary);
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.12s;
+    }
+    .chip:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+    .input-row {
+      padding: 12px 14px;
+      border-top: 0.5px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .msg-input {
+      flex: 1;
+      padding: 9px 13px;
+      border: 0.5px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .msg-input:focus { border-color: #888780; }
+    .send-btn {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      background: #2C2C2A;
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .send-btn:hover { opacity: 0.78; }
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 196px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .info-card {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+    }
+    .info-card-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+      font-size: 12px;
+    }
+    .info-label { color: var(--text-secondary); }
+    .info-val { font-weight: 500; color: var(--text-primary); }
+    .cap-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 2px 0;
+    }
+    .cap-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+    .fade-in { animation: fadeIn 0.22s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* error banner */
+    .error-banner {
+      background: #FCEBEB;
+      border: 0.5px solid #F09595;
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #A32D2D;
+      display: none;
+      margin: 0 14px 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#F1EFE8" stroke-width="1.5"/><path d="M5 8h6M8 5v6" stroke="#F1EFE8" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <span class="header-title">Agent Studio</span>
+  <span class="header-tag">3 agents active</span>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('gmail')"><div class="tab-dot" style="background:#D85A30"></div>Gmail agent</div>
+  <div class="tab" onclick="switchTab('assistant')"><div class="tab-dot" style="background:#7F77DD"></div>AI assistant</div>
+  <div class="tab" onclick="switchTab('research')"><div class="tab-dot" style="background:#1D9E75"></div>Research agent</div>
+</div>
+
+<div class="body">
+
+  <!-- GMAIL -->
+  <div class="panel active" id="panel-gmail">
+    <div class="panel-inner">
+      <div class="chat-window">
+        <div class="chat-header">
+          <div class="agent-badge" style="background:#FAECE7;color:#993C1D;">Gmail agent</div>
+          <div class="agent-status"><div class="status-dot"></div>Connected · MCP</div>
+        </div>
+        <div class="messages" id="msgs-gmail">
+          <div class="msg agent fade-in">
+            <div class="msg-avatar" style="background:#FAECE7;color:#993C1D;">G</div>
+            <div>
+              <div class="msg-bubble">Hi! I'm your Gmail agent. I can read, search, compose, and send emails on your behalf. What would you like to do?</div>
+              <div class="msg-time" id="init-time-gmail"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chips-row">
+          <div class="chip" onclick="sendChip('gmail','Show my latest emails')">Show latest emails</div>
+          <div class="chip" onclick="sendChip('gmail','Search for emails from my boss')">Search emails</div>
+          <div class="chip" onclick="sendChip('gmail','Draft a follow-up email')">Draft email</div>
+          <div class="chip" onclick="sendChip('gmail','Summarize my unread threads')">Summarize unread</div>
+        </div>
+        <div class="error-banner" id="err-gmail">API key missing — add ANTHROPIC_API_KEY in Replit Secrets.</div>
+        <div class="input-row">
+          <input class="msg-input" id="input-gmail" placeholder="Ask the Gmail agent..." onkeydown="if(event.key==='Enter')sendMsg('gmail')" />
+          <button class="send-btn" id="btn-gmail" onclick="sendMsg('gmail')">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="#F1EFE8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="info-card">
+          <div class="info-card-title">Agent config</div>
+          <div class="info-row"><span class="info-label">Model</span><span class="info-val" style="font-size:11px;font-family:'DM Mono',monospace;">sonnet-4</span></div>
+          <div class="info-row"><span class="info-label">Transport</span><span class="info-val" style="font-size:11px;">MCP / SSE</span></div>
+          <div class="info-row"><span class="info-label">Proxy</span><span class="info-val" style="font-size:11px;color:#1D9E75;">Server-side ✓</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-title">Capabilities</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Read & search email</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Draft & send messages</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Thread summarization</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Label management</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASSISTANT -->
+  <div class="panel" id="panel-assistant">
+    <div class="panel-inner">
+      <div class="chat-window">
+        <div class="chat-header">
+          <div class="agent-badge" style="background:#EEEDFE;color:#3C3489;">AI assistant</div>
+          <div class="agent-status"><div class="status-dot"></div>Ready</div>
+        </div>
+        <div class="messages" id="msgs-assistant">
+          <div class="msg agent fade-in">
+            <div class="msg-avatar" style="background:#EEEDFE;color:#3C3489;">A</div>
+            <div>
+              <div class="msg-bubble">Hello! I'm a general-purpose AI assistant powered by Claude. I can help with writing, analysis, coding, brainstorming, and much more. What can I help you with?</div>
+              <div class="msg-time" id="init-time-assistant"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chips-row">
+          <div class="chip" onclick="sendChip('assistant','Explain how MCP servers work')">Explain MCP</div>
+          <div class="chip" onclick="sendChip('assistant','Write a Python function to parse JSON')">Write code</div>
+          <div class="chip" onclick="sendChip('assistant','What are multi-agent system design patterns?')">Agent patterns</div>
+          <div class="chip" onclick="sendChip('assistant','Help me brainstorm a product idea')">Brainstorm</div>
+        </div>
+        <div class="error-banner" id="err-assistant"></div>
+        <div class="input-row">
+          <input class="msg-input" id="input-assistant" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendMsg('assistant')" />
+          <button class="send-btn" id="btn-assistant" onclick="sendMsg('assistant')">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="#F1EFE8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="info-card">
+          <div class="info-card-title">Agent config</div>
+          <div class="info-row"><span class="info-label">Model</span><span class="info-val" style="font-size:11px;font-family:'DM Mono',monospace;">sonnet-4</span></div>
+          <div class="info-row"><span class="info-label">Memory</span><span class="info-val" style="font-size:11px;">Windowed</span></div>
+          <div class="info-row"><span class="info-label">Tools</span><span class="info-val" style="font-size:11px;">None</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-title">Capabilities</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#7F77DD"></div>Long-form writing</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#7F77DD"></div>Code generation</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#7F77DD"></div>Reasoning & Q&A</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#7F77DD"></div>Multi-turn dialogue</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#7F77DD"></div>Summarization</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESEARCH -->
+  <div class="panel" id="panel-research">
+    <div class="panel-inner">
+      <div class="chat-window">
+        <div class="chat-header">
+          <div class="agent-badge" style="background:#E1F5EE;color:#085041;">Research agent</div>
+          <div class="agent-status"><div class="status-dot"></div>Web search enabled</div>
+        </div>
+        <div class="messages" id="msgs-research">
+          <div class="msg agent fade-in">
+            <div class="msg-avatar" style="background:#E1F5EE;color:#085041;">R</div>
+            <div>
+              <div class="msg-bubble">Hi! I'm your research and analysis agent. I use live web search to find, synthesize, and analyse information on any topic. Ask me to research anything!</div>
+              <div class="msg-time" id="init-time-research"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chips-row">
+          <div class="chip" onclick="sendChip('research','What are the latest trends in AI agents in 2025?')">AI agent trends</div>
+          <div class="chip" onclick="sendChip('research','Compare LangChain vs CrewAI for multi-agent systems')">Compare frameworks</div>
+          <div class="chip" onclick="sendChip('research','Research the MCP protocol and its adoption')">MCP research</div>
+          <div class="chip" onclick="sendChip('research','Summarize recent news about Anthropic')">Anthropic news</div>
+        </div>
+        <div class="error-banner" id="err-research"></div>
+        <div class="input-row">
+          <input class="msg-input" id="input-research" placeholder="Research any topic..." onkeydown="if(event.key==='Enter')sendMsg('research')" />
+          <button class="send-btn" id="btn-research" onclick="sendMsg('research')">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="#F1EFE8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="info-card">
+          <div class="info-card-title">Agent config</div>
+          <div class="info-row"><span class="info-label">Model</span><span class="info-val" style="font-size:11px;font-family:'DM Mono',monospace;">sonnet-4</span></div>
+          <div class="info-row"><span class="info-label">Tools</span><span class="info-val" style="font-size:11px;">web_search</span></div>
+          <div class="info-row"><span class="info-label">Status</span><span class="info-val" style="font-size:11px;color:#1D9E75;">Live ✓</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-title">Capabilities</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Live web search</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Source synthesis</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Competitive analysis</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Trend reports</div>
+          <div class="cap-item"><div class="cap-dot" style="background:#1D9E75"></div>Fact verification</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const AGENTS = {
+    gmail: {
+      initial: 'G', bg: '#FAECE7', color: '#993C1D',
+      system: `You are a Gmail assistant agent. Help users manage their Gmail inbox. You can read, search, draft, and send emails. Be concise and practical. Format email results clearly. Max 3 short paragraphs.`
+    },
+    assistant: {
+      initial: 'A', bg: '#EEEDFE', color: '#3C3489',
+      system: `You are a helpful, knowledgeable AI assistant powered by Claude. Answer clearly and concisely. For code, use short snippets with brief explanations. Max 3 paragraphs or a short code block.`
+    },
+    research: {
+      initial: 'R', bg: '#E1F5EE', color: '#085041',
+      webSearch: true,
+      system: `You are a research and analysis agent with live web search. When asked to research a topic, provide a structured analysis with key findings, trends, and insights. Be analytical and concise — max 4 paragraphs. Use bullet points for lists of findings.`
+    }
+  };
+
+  const histories = { gmail: [], assistant: [], research: [] };
+
+  function getTime() {
+    const n = new Date();
+    return n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+  }
+
+  ['gmail','assistant','research'].forEach(a => {
+    document.getElementById('init-time-' + a).textContent = getTime();
+  });
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['gmail','assistant','research'][i] === tab);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+/* =========================
+   UI HELPERS
+========================= */
+
+function appendMsg(agent, role, text) {
+  const container = document.getElementById('msgs-' + agent);
+
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'agent') + ' fade-in';
+
+  const avatar = role === 'user' ? 'U' : agent[0].toUpperCase();
+  const avatarStyle = role === 'user'
+    ? 'background:#D3D1C7;color:#2C2C2A;'
+    : 'background:#EEE;color:#333;';
+
+  div.innerHTML = `
+    <div class="msg-avatar" style="${avatarStyle}">${avatar}</div>
+    <div>
+      <div class="msg-bubble">${text.replace(/\n/g, '<br/>')}</div>
+      <div class="msg-time">${getTime()}</div>
+    </div>
+  `;
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showThinking(agent) {
+  const container = document.getElementById('msgs-' + agent);
+
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.id = 'thinking-' + agent;
+
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:#eee;">${agent[0].toUpperCase()}</div>
+    <div class="thinking-row">
+      <div class="dot-pulse"><span></span><span></span><span></span></div>
+      <span style="font-size:12px;color:#6b6a65;">Thinking...</span>
+    </div>
+  `;
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeThinking(agent) {
+  const el = document.getElementById('thinking-' + agent);
+  if (el) el.remove();
+}
+
+function showError(msg) {
+  alert(msg); // simple fallback (you can improve later)
+}
+
+/* =========================
+   API CALL (NEW CONTRACT)
+========================= */
+
+async function callAPI(agent, userMsg) {
+  const res = await fetch('http://127.0.0.1:3000/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      message: userMsg,
+      sessionId: agent
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || 'API error');
+  }
+
+  return data.reply;
+}
+
+/* =========================
+   SEND MESSAGE
+========================= */
+
+async function sendMsg(agent) {
+  const input = document.getElementById('input-' + agent);
+  const btn = document.getElementById('btn-' + agent);
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  btn.disabled = true;
+
+  appendMsg(agent, 'user', text);
+  showThinking(agent);
+
+  try {
+    const reply = await callAPI(agent, text);
+
+    removeThinking(agent);
+    appendMsg(agent, 'agent', reply);
+
+  } catch (err) {
+    removeThinking(agent);
+    showError(err.message || 'Something went wrong');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+/* =========================
+   CHIP SHORTCUTS
+========================= */
+
+function sendChip(agent, text) {
+  switchTab(agent);
+  document.getElementById('input-' + agent).value = text;
+  sendMsg(agent);
+}
+</script>
+</body>
+</html>
